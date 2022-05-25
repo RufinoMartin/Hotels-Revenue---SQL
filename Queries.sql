@@ -187,14 +187,61 @@ group by is_canceled ) a
 -- Noncancs. triple cancels.
 -- to answer: What percentages of arrivals had a cancelation? 
 
-select arrival_date_year, is_repeated_guest,
+-- Next: we set up a CTE to inspect further relationships:
+-- repeated guest, previous cancelations, cancelations and revenue.
+
+SELECT * 
+	INTO #Cancel1
+from (
+select hotel, arrival_date_year, is_repeated_guest,
  previous_cancellations, 
  count (case when is_canceled = 1 then 1 END) Canceled,
 count (case when is_canceled = 0 then 1 END) Not_Canceled, Revenue
 FROM [Hotel Revenue].[dbo].[All]
-group by arrival_date_year, is_repeated_guest,
+group by arrival_date_year, is_repeated_guest,hotel, 
  previous_cancellations, Revenue
- order by Revenue DESC
+-- order by Revenue DESC 
+) a
  
 
+-- Previous Cancelations Effect:
+-- statistically, cancelations follow an unvoluntary trend. 
 
+select
+ previous_cancellations,
+ SUM(Canceled) AS Cancelation,
+SUM(Not_Canceled) as No_Cancelation
+from #Cancel
+ group by previous_cancellations
+ order by previous_cancellations
+
+-- Lets add 'Year' to see how cancelations changed through time. 
+-- Also 'Hotel' to discriminate between locations. 
+
+select
+arrival_date_year, hotel,
+ SUM(Canceled) AS Cancelation,
+SUM(Not_Canceled) as No_Cancelation
+from #Cancel1
+ group by arrival_date_year, hotel
+ order by arrival_date_year
+
+
+-- which are de Months of more stay volume?
+
+select arrival_date_month, count(arrival_date_month) as Entries
+FROM [Hotel Revenue].[dbo].[All]
+group by  arrival_date_month
+order by Entries DESC
+
+--> Northern Hemisphere Summer-Based Hotels probably. 
+
+-- A basic revenue query:
+
+select Hotel, sum(Revenue) as Hotel_Revenue
+FROM [Hotel Revenue].[dbo].[All]
+group by  Hotel
+order by Hotel_Revenue DESC
+
+select *
+FROM [Hotel Revenue].[dbo].[All]
