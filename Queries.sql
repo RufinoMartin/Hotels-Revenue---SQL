@@ -168,7 +168,33 @@ order by DiscPerc
 
 -- Cancelations
 
-select arrival_date_day_of_month, is_canceled, revenue
+-- Number of cancelations
+
+select COUNT (is_canceled)
 FROM [Hotel Revenue].[dbo].[All]
-where is_canceled = 1
+
+-- Number of cancelations and non cancelations?
+
+SELECT * 
+	INTO #CancelationsCTE
+FROM (
+select is_canceled, 
+	count (case when is_canceled = 1 then 1 END) Canceled,
+	count (case when is_canceled = 0 then 1 END) Not_Canceled
+FROM [Hotel Revenue].[dbo].[All]
+group by is_canceled ) a
+
+-- Noncancs. triple cancels.
+-- to answer: What percentages of arrivals had a cancelation? 
+
+select arrival_date_year, is_repeated_guest,
+ previous_cancellations, 
+ count (case when is_canceled = 1 then 1 END) Canceled,
+count (case when is_canceled = 0 then 1 END) Not_Canceled, Revenue
+FROM [Hotel Revenue].[dbo].[All]
+group by arrival_date_year, is_repeated_guest,
+ previous_cancellations, Revenue
+ order by Revenue DESC
+ 
+
 
